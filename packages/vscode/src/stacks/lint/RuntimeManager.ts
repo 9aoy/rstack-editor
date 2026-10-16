@@ -8,7 +8,8 @@
 // - Detection is the gate. A document no detected config governs is never
 //   linted, so the manager asks `documentMode` for the document's ownership
 //   choice (ADR 0006) and detaches the document when it has none.
-// - Settings live under `rstack.rslint.*`.
+// - Settings live under `rstack.rslint.*`, plus the shared
+//   `rstack.rstackCli.packagePath`, which bridged mode reads to locate rstack.
 // - A failed resolution reports through the **folder status**, never a
 //   `window.showWarningMessage`: this stack owns no UI chrome (adaptation 4).
 //   The last-good rule is upstream's — the document keeps the runtime it
@@ -20,6 +21,7 @@
 //   stopped same-key clients on reconcile — see AGENTS.md ("Ahead of upstream").
 
 import { workspace, type TextDocument, type WorkspaceFolder } from 'vscode';
+import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
 import type {
   CoreResolutionRequest,
   ResolvedCoreRuntime,
@@ -243,6 +245,10 @@ export class RuntimeManager {
       const resolved = await this.resolver.resolve(document, workspaceFolder, {
         mode,
         corePath: configuration.get<string>('corePath'),
+        rstackPackagePath: getConfiguredRstackPackagePath(
+          workspaceFolder,
+          document.uri,
+        ),
       });
       return { action: 'bind', workspaceFolder, resolved };
     } catch (error) {

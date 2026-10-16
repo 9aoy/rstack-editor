@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { findPackageJsonUncached } from '../../shared/packageResolve';
+import { resolveRstackPackageJson } from '../../shared/rstackPackage';
 import {
   checkPackageVersion,
   formatVersionMismatch,
@@ -74,15 +74,41 @@ export type RstackShim = {
  *
  * Resolution is anchored on the config directory rather than the workspace
  * folder so a monorepo package with its own `rstack` install wins over the root.
+ * A configured `rstack.rstackCli.packagePath` replaces that walk-up for every
+ * bridge in the folder, the way `rstack.rstest.corePath` overrides every
+ * project's core.
  */
 export function resolveRstackShim(
   configDir: string,
-  // The caller re-resolves on every tree refresh (a fresh `pnpm install` has to
-  // be picked up without a reload), so a persistent failure must not re-log.
-  { silent = false }: { silent?: boolean } = {},
+  {
+    folderRoot = configDir,
+    configured,
+    // The caller re-resolves on every tree refresh (a fresh `pnpm install` has
+    // to be picked up without a reload), so a persistent failure must not
+    // re-log.
+    silent = false,
+  }: {
+    /** The workspace folder root; a relative `configured` resolves from it. */
+    folderRoot?: string;
+    /** `rstack.rstackCli.packagePath`, `${workspaceFolder}` expanded. */
+    configured?: string;
+    silent?: boolean;
+  } = {},
 ): RstackShim | undefined {
-  const packageJsonPath = findPackageJsonUncached('rstack', configDir);
-  if (packageJsonPath === undefined) {
+  const resolution = resolveRstackPackageJson({
+    configured,
+    folderRoot,
+    searchFrom: configDir,
+  });
+  if (resolution.kind === 'invalid-setting') {
+    // Not the not-installed state: the fix is the setting, not an install.
+    if (!silent) {
+      logger.error(resolution.message);
+    }
+    status.crashed(resolution.message, configDir);
+    return undefined;
+  }
+  if (resolution.kind === 'not-installed') {
     if (!silent) {
       logger.warn(
         formatNotInstalledLog(
@@ -100,6 +126,7 @@ export function resolveRstackShim(
     status.notInstalled(RSTACK_NOT_INSTALLED_STATUS, configDir);
     return undefined;
   }
+  const packageJsonPath = resolution.packageJsonPath;
 
   const packageDirectory = path.dirname(packageJsonPath);
   const configFilePath = path.join(packageDirectory, SHIM_RELATIVE_PATH);

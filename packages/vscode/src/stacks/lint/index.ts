@@ -8,6 +8,7 @@ import type {
 } from '../../types';
 import { NODE_EXECUTABLE_SETTING } from '../../shared/nodeResolution';
 import { formatNotInstalledLog } from '../../shared/notInstalled';
+import { RSTACK_PACKAGE_PATH_SETTING } from '../../shared/rstackPackage';
 import { CoreResolver, type ResolvedCoreRuntime } from './CoreResolver';
 import { Logger } from './logger';
 import { Rslint } from './Rslint';
@@ -59,7 +60,11 @@ class RslintController implements StackController {
    * full restart pass (a stack must never rebuild itself), which also clears
    * the shared User Node preflight memo — an in-place reconcile would keep it.
    */
-  readonly restartOnSettings = [NODE_EXECUTABLE_SETTING, 'corePath'];
+  readonly restartOnSettings = [
+    NODE_EXECUTABLE_SETTING,
+    RSTACK_PACKAGE_PATH_SETTING,
+    'corePath',
+  ];
 
   #context: StackContext | undefined;
   #logger: Logger | undefined;

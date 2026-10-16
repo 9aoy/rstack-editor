@@ -22,6 +22,7 @@ rs.mock('vscode', () => ({
       showInformationMessage() {},
     },
     workspace: {
+      getConfiguration: () => ({ get: () => undefined }),
       createFileSystemWatcher: () => ({
         onDidCreate: () => ({ dispose() {} }),
         onDidChange: () => ({ dispose() {} }),

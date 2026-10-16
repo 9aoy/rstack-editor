@@ -68,6 +68,8 @@ export interface CoreResolutionRequest {
   readonly mode: RslintMode;
   /** `rstack.rslint.corePath`, read with the document's URI (resource scope). */
   readonly corePath?: string;
+  /** `rstack.rstackCli.packagePath`, read the same way; bridged mode only. */
+  readonly rstackPackagePath?: string;
 }
 
 function normalizeIdentity(filePath: string): string {
@@ -140,6 +142,7 @@ export class CoreResolver {
       folderRoot: workspaceFolder.uri.fsPath,
       mode: request.mode,
       corePath: request.corePath,
+      rstackPackagePath: request.rstackPackagePath,
       documentDirectory: path.dirname(document.uri.fsPath),
     });
     const installation = validateInstallation(

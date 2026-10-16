@@ -152,6 +152,19 @@ describe('resolveRstackShim', () => {
     expect(logged).toEqual([]);
   });
 
+  it('reports a configured path that does not resolve as a crash, not a missing install', () => {
+    const root = makeTmpDir();
+
+    expect(
+      resolveRstackShim(root, {
+        folderRoot: root,
+        configured: 'infra/node_modules/rstack',
+      }),
+    ).toBeUndefined();
+    expect(logged.join('\n')).toContain('rstack.rstackCli.packagePath');
+    expect(reported.map((state) => state.kind)).toEqual(['crashed']);
+  });
+
   it('refuses an rstack install that ships no Rstest shim', () => {
     const configDir = createWorkspace({ shim: false });
 

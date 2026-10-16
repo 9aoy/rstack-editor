@@ -28,10 +28,15 @@ import {
   NodePreflightError,
   resolveUserNodeOnce,
 } from '../../shared/nodeResolution';
+import { readPackageJson } from '../../shared/packageResolve';
 import {
-  findPackageJsonUncached,
-  readPackageJson,
-} from '../../shared/packageResolve';
+  RSTACK_PACKAGE_PATH_SETTING,
+  resolveRstackPackageJson,
+} from '../../shared/rstackPackage';
+import {
+  getConfiguredRstackPackagePath,
+  rstackResolveHookEnv,
+} from '../../shared/rstackPackageSetting';
 import {
   checkPackageVersion,
   formatVersionMismatch,
@@ -363,8 +368,21 @@ class FmtFolderRuntime {
     this.#closing = false;
     this.setState('starting');
 
-    const pkgJsonPath = findPackageJsonUncached('rstack', folderRoot);
-    if (!pkgJsonPath) {
+    const rstackPackage = resolveRstackPackageJson({
+      configured: getConfiguredRstackPackagePath(this.folder),
+      folderRoot,
+      searchFrom: folderRoot,
+    });
+    if (rstackPackage.kind === 'invalid-setting') {
+      // A wrong setting is fixed in the setting, not by an install, so it is
+      // `crashed` rather than the not-installed `disabled`.
+      this.setState('crashed', rstackPackage.message);
+      if (this.#packageEpisode.changed(rstackPackage.message)) {
+        context.output.error(rstackPackage.message);
+      }
+      return;
+    }
+    if (rstackPackage.kind === 'not-installed') {
       // The shell polls while this state remains disabled. The trailing restart
       // hint stays as the explicit fallback if recovery is delayed.
       this.setState('disabled', formatNotInstalledStatus('fmt', 'rstack'));
@@ -376,6 +394,7 @@ class FmtFolderRuntime {
       return;
     }
     this.#packageEpisode.clear();
+    const pkgJsonPath = rstackPackage.packageJsonPath;
 
     // One read for the version and the bin entry; `readPackageJson` re-reads
     // from disk by design, so a reinstall is picked up on the next start.
@@ -403,6 +422,7 @@ class FmtFolderRuntime {
       nodeExecutable,
       [rsBinJs, 'fmt', '--lsp'],
       folderRoot,
+      rstackResolveHookEnv(this.folder, path.dirname(pkgJsonPath)),
     );
     this.#owner = owner;
     const serverOptions: ServerOptions = async () => owner.start();
@@ -651,10 +671,14 @@ class FmtFolderRuntime {
 class FmtController implements StackController {
   readonly id = 'fmt' as const;
   /**
-   * The Node runtime is chosen once per server start, so a changed pin can only
-   * reach a live server through a rebuild of this controller.
+   * The Node runtime and the `rstack` package are chosen once per server
+   * start, so a changed pin can only reach a live server through a rebuild of
+   * this controller.
    */
-  readonly restartOnSettings = [NODE_EXECUTABLE_SETTING];
+  readonly restartOnSettings = [
+    NODE_EXECUTABLE_SETTING,
+    RSTACK_PACKAGE_PATH_SETTING,
+  ];
 
   #context: StackContext | undefined;
   /** The newest detection result, which `running` reports the reason from. */

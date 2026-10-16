@@ -35,7 +35,11 @@ describe('not-installed wording', () => {
 
   it('logs where the stack looked', () => {
     expect(formatNotInstalledLog('rstack', 'app', '/repo/app')).toBe(
-      'rstack is not installed in app (node_modules missing); searched from /repo/app',
+      'rstack is not installed in app (node_modules missing); searched from /repo/app; if it is installed elsewhere, set "rstack.rstackCli.packagePath" to it',
+    );
+    // The override is an `rstack` setting; other packages have their own.
+    expect(formatNotInstalledLog('@rstest/core', 'app', '/repo/app')).toBe(
+      '@rstest/core is not installed in app (node_modules missing); searched from /repo/app',
     );
   });
 

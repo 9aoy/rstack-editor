@@ -20,6 +20,7 @@ import {
 import { CONFIG_SECTION, getConfigValue } from './config';
 import { createDebugWorker } from './debugWorker';
 import { MessageLatch } from '../../shared/messageLatch';
+import { rstackResolveHookEnv } from '../../shared/rstackPackageSetting';
 import {
   formatNotInstalledLog,
   formatNotInstalledStatus,
@@ -778,7 +779,7 @@ export class RstestApi {
       nodeExecutable,
       nodeExecArgs,
     });
-    const workerEnv: NodeJS.ProcessEnv = {
+    const composedEnv: NodeJS.ProcessEnv = {
       // same as packages/core/src/cli/prepare.ts
       // if (!process.env.NODE_ENV) process.env.NODE_ENV = 'test'
       NODE_ENV: 'test',
@@ -788,6 +789,15 @@ export class RstestApi {
       // process.env.RSTEST = 'true';
       RSTEST: 'true',
     };
+    // Adaptation 2: the bridge's shim loads `rstack.config.*` in the worker.
+    // Composed after the env settings so a user's own `NODE_OPTIONS` there
+    // keeps applying.
+    const workerEnv =
+      rstackResolveHookEnv(
+        this.workspace,
+        this.project.isBridge ? this.rstestResolutionDir : undefined,
+        composedEnv,
+      ) ?? composedEnv;
     // Upstream sets FORCE_COLOR: '1' unconditionally; ours is conditional and
     // the worker retracts it when the config disables color (adaptation #9,
     // shared/colorEnv.ts).

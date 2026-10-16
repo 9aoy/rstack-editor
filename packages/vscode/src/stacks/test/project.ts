@@ -5,6 +5,7 @@ import picomatch from 'picomatch';
 import { glob } from 'tinyglobby';
 import vscode from 'vscode';
 import { RSTACK_CONFIG_NAMES } from '../../detection';
+import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
 import { resolveRstackShim } from './bridge';
 import { watchConfigValue } from './config';
 import {
@@ -336,11 +337,16 @@ export class WorkspaceManager implements vscode.Disposable {
 
     const candidateDirs = new Set<string>();
     const wanted = new Map<string, ProjectSource>();
+    const configuredRstackPackage = getConfiguredRstackPackagePath(
+      this.workspaceFolder,
+    );
     for (const [cwd, rstackConfig] of winnerByDir) {
       const key = rstackConfig.toString();
       if (nativeProjectDirs.has(cwd)) continue;
       candidateDirs.add(cwd);
       const shim = resolveRstackShim(cwd, {
+        folderRoot: this.workspaceFolder.uri.fsPath,
+        configured: configuredRstackPackage,
         silent: this.reportedShimFailures.has(cwd),
       });
       if (!shim) {
