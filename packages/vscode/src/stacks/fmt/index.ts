@@ -35,7 +35,7 @@ import {
 } from '../../shared/rstackPackage';
 import {
   getConfiguredRstackPackagePath,
-  rstackResolveHookEnv,
+  rstackResolveHookArgs,
 } from '../../shared/rstackPackageSetting';
 import {
   checkPackageVersion,
@@ -420,9 +420,13 @@ class FmtFolderRuntime {
 
     const owner = new LanguageServerProcessOwner(
       nodeExecutable,
-      [rsBinJs, 'fmt', '--lsp'],
+      [
+        ...rstackResolveHookArgs(this.folder, path.dirname(pkgJsonPath)),
+        rsBinJs,
+        'fmt',
+        '--lsp',
+      ],
       folderRoot,
-      rstackResolveHookEnv(this.folder, path.dirname(pkgJsonPath)),
     );
     this.#owner = owner;
     const serverOptions: ServerOptions = async () => owner.start();

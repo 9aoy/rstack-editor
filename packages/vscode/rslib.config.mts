@@ -73,7 +73,7 @@ const libs: LibConfig[] = [
                 to: `${yukuBindingPackage}/${path.basename(yukuBindingPath)}`,
               },
               {
-                // Preloaded via `NODE_OPTIONS=--import`, so a file of its own.
+                // Preloaded via a `--import` node arg, so a file of its own.
                 from: path.join(
                   rootDir,
                   'src/shared/rstackResolveHookPreload.mjs',

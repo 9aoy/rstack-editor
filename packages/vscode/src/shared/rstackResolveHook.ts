@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 
 /**
- * The spawn env of a process that loads `rstack.config.*` while
+ * The node args for a process that loads `rstack.config.*` while
  * `rstack.rstackCli.packagePath` selected the `rstack` it runs (#103). The
  * config's own `import 'rstack'` resolves from the config file, where that
  * installation is not visible; the preloaded hook
@@ -10,21 +10,15 @@ import { pathToFileURL } from 'node:url';
  * installation. It bridges: nothing a package-manager shim does (`NODE_PATH`)
  * and no file inside `rstack` is reproduced here.
  *
- * `NODE_OPTIONS` is appended to, so a user's own flags keep applying. The hook
- * is passed as a `file:` URL because `NODE_OPTIONS` splits on spaces.
+ * An explicit node arg rather than env, so it reaches exactly the spawned
+ * process and also fits a terminal command line. The package.json path rides
+ * in the hook URL's `pkg` query, keeping the flag a single argv element.
  */
-export function withRstackResolveHook(
-  baseEnv: NodeJS.ProcessEnv,
-  packageJsonPath: string,
+export function rstackResolveHookImportArgs(
   hookPath: string,
-): NodeJS.ProcessEnv {
-  const importFlag = `--import ${pathToFileURL(hookPath).href}`;
-  return {
-    ...baseEnv,
-    NODE_OPTIONS: baseEnv.NODE_OPTIONS
-      ? `${baseEnv.NODE_OPTIONS} ${importFlag}`
-      : importFlag,
-    // Read by the hook.
-    RSTACK_EDITOR_RSTACK_PACKAGE_JSON: packageJsonPath,
-  };
+  packageJsonPath: string,
+): string[] {
+  const url = pathToFileURL(hookPath);
+  url.searchParams.set('pkg', packageJsonPath);
+  return ['--import', url.href];
 }

@@ -2,7 +2,7 @@ import path from 'node:path';
 import vscode from 'vscode';
 import { expandWorkspaceFolder } from './nodeExecutableSetting';
 import { RSTACK_PACKAGE_PATH_SETTING } from './rstackPackage';
-import { withRstackResolveHook } from './rstackResolveHook';
+import { rstackResolveHookImportArgs } from './rstackResolveHook';
 
 /**
  * Reads `rstack.rstackCli.packagePath` for a resource (a folder, or a document
@@ -25,21 +25,20 @@ export const getConfiguredRstackPackagePath = (
 };
 
 /**
- * The env for a spawned process that loads `rstack.config.*` with the rstack
- * at `rstackDirectory`: `baseEnv` plus the resolve hook when the setting chose
- * that rstack (`withRstackResolveHook`), otherwise `undefined`.
+ * The node args (before the script path) for a spawned process that loads
+ * `rstack.config.*` with the rstack at `rstackDirectory`: the resolve hook
+ * when the setting chose that rstack (`rstackResolveHookImportArgs`),
+ * otherwise none.
  */
-export const rstackResolveHookEnv = (
+export const rstackResolveHookArgs = (
   folder: vscode.WorkspaceFolder,
   rstackDirectory: string | undefined,
-  baseEnv: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv | undefined =>
+): string[] =>
   rstackDirectory === undefined ||
   getConfiguredRstackPackagePath(folder) === undefined
-    ? undefined
-    : withRstackResolveHook(
-        baseEnv,
-        path.join(rstackDirectory, 'package.json'),
+    ? []
+    : rstackResolveHookImportArgs(
         // Copied beside the bundles by `rslib.config.mts`.
         path.resolve(__dirname, 'rstack-resolve-hook.mjs'),
+        path.join(rstackDirectory, 'package.json'),
       );
