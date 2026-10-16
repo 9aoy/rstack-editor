@@ -167,6 +167,33 @@ describe('resolveRstackShim', () => {
     expect(reported.map((state) => state.kind)).toEqual(['crashed']);
   });
 
+  it('retires the setting crash once the configured path resolves', () => {
+    const root = makeTmpDir();
+    const configured = 'infra/node_modules/rstack';
+    resolveRstackShim(root, {
+      configured: resolveRstackPackageJson(root, configured),
+    });
+    expect(status.hasFailed(root)).toBe(true);
+
+    // The path appears without a settings edit (e.g. `pnpm install`); the
+    // next sync pass re-resolves it.
+    const rstackDir = path.join(root, configured);
+    fs.mkdirSync(path.join(rstackDir, 'dist'), { recursive: true });
+    fs.writeFileSync(
+      path.join(rstackDir, 'package.json'),
+      JSON.stringify({ name: 'rstack', version: '0.7.6' }),
+    );
+    fs.writeFileSync(path.join(rstackDir, 'dist', 'rstestConfig.js'), '');
+
+    expect(
+      resolveRstackShim(root, {
+        configured: resolveRstackPackageJson(root, configured),
+      }),
+    ).toBeDefined();
+    expect(status.hasFailed(root)).toBe(false);
+    expect(reported.map((state) => state.kind)).toEqual(['crashed', 'running']);
+  });
+
   it('refuses an rstack install that ships no Rstest shim', () => {
     const configDir = createWorkspace({ shim: false });
 

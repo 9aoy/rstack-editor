@@ -157,9 +157,9 @@ export function resolveRstackShim(
     packageDirectory,
     version,
   });
-  // One recovery observation: a passed version check proves the package is
-  // installed, so `versionOk` retires whichever of the two latches the
-  // previous pass left.
-  status.versionOk(configDir);
+  // One recovery observation: the shim resolved completely, so `resolved`
+  // retires whatever latch the previous pass left here, an invalid-setting
+  // crash included.
+  status.resolved(configDir);
   return { configFilePath, packageDirectory, version };
 }
