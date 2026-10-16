@@ -4,10 +4,7 @@ import {
   findPackageJsonUncached,
   readPackageJson,
 } from '../../shared/packageResolve';
-import {
-  type RstackPackageSource,
-  resolveRstackPackageJson,
-} from '../../shared/rstackPackage';
+import { resolveRstackPackageJson } from '../../shared/rstackPackage';
 
 export type RslintMode = 'native' | 'bridged';
 
@@ -17,7 +14,6 @@ export interface RslintResolution {
   readonly coreVersion: string | undefined;
   readonly rstackDir?: string;
   readonly rstackVersion?: string;
-  readonly rstackSource?: RstackPackageSource;
   readonly shimPath?: string;
 }
 
@@ -152,8 +148,8 @@ interface PackageLocation {
 function readPackageLocation(
   packageName: 'rstack' | '@rslint/core',
   packageJsonPath: string,
-  pkg = readPackageJson(packageJsonPath),
 ): PackageLocation {
+  const pkg = readPackageJson(packageJsonPath);
   if (pkg?.name !== packageName) {
     throw new RslintResolutionError(
       'invalid-package',
@@ -196,18 +192,11 @@ function resolveConfiguredCore(
 function resolveRstack(
   folderRoot: string,
   configured: string | undefined,
-): PackageLocation & { readonly source: RstackPackageSource } {
-  const resolution = resolveRstackPackageJson({ configured, folderRoot });
+): PackageLocation {
+  const resolution = resolveRstackPackageJson(folderRoot, configured);
   switch (resolution.kind) {
     case 'found':
-      return {
-        ...readPackageLocation(
-          'rstack',
-          resolution.packageJsonPath,
-          resolution.pkg,
-        ),
-        source: resolution.source,
-      };
+      return readPackageLocation('rstack', resolution.packageJsonPath);
     case 'not-installed':
       throw new RslintResolutionError(
         'missing-rstack',
@@ -237,11 +226,7 @@ export interface ResolveRslintOptions {
   readonly folderRoot: string;
   readonly mode: RslintMode;
   readonly corePath?: string;
-  /**
-   * `rstack.rstackCli.packagePath`, `${workspaceFolder}` expanded. Bridged mode
-   * only: it replaces the folder-root walk-up for `rstack`, and the core hop
-   * still starts from the directory it selects.
-   */
+  /** `rstack.rstackCli.packagePath`; replaces bridged mode's rstack walk-up. */
   readonly rstackPackagePath?: string;
   /**
    * Where the native walk-up starts (per-document resolution, rslint #1617);
@@ -259,7 +244,7 @@ export function resolveRslint({
   rstackPackagePath,
   documentDirectory,
 }: ResolveRslintOptions): RslintResolution {
-  let rstack: ReturnType<typeof resolveRstack> | undefined;
+  let rstack: PackageLocation | undefined;
   let shimPath: string | undefined;
   if (mode === 'bridged') {
     rstack = resolveRstack(folderRoot, rstackPackagePath);
@@ -291,7 +276,6 @@ export function resolveRslint({
       : {
           rstackDir: rstack.directory,
           rstackVersion: rstack.version,
-          rstackSource: rstack.source,
           shimPath,
         }),
   };

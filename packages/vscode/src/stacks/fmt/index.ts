@@ -16,7 +16,10 @@ import { RSTACK_CONFIG_GLOB } from '../../detection';
 import { MessageLatch } from '../../shared/messageLatch';
 import { displayPath } from '../../shared/displayPath';
 import { classifyMissingDependencyMessage } from '../../shared/missingDependency';
-import { getConfiguredNodeExecutable } from '../../shared/nodeExecutableSetting';
+import {
+  getConfiguredNodeExecutable,
+  getConfiguredPathSetting,
+} from '../../shared/nodeExecutableSetting';
 import {
   NotInstalledEpisode,
   formatNotInstalledLog,
@@ -28,13 +31,13 @@ import {
   NodePreflightError,
   resolveUserNodeOnce,
 } from '../../shared/nodeResolution';
+import { readPackageJson } from '../../shared/packageResolve';
 import {
   RSTACK_PACKAGE_PATH_HINT,
   RSTACK_PACKAGE_PATH_SETTING,
   resolveRstackPackageJson,
   rstackResolveHookArgs,
 } from '../../shared/rstackPackage';
-import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
 import {
   checkPackageVersion,
   formatVersionMismatch,
@@ -366,10 +369,11 @@ class FmtFolderRuntime {
     this.#closing = false;
     this.setState('starting');
 
-    const rstackPackage = resolveRstackPackageJson({
-      configured: getConfiguredRstackPackagePath(this.folder),
-      folderRoot,
-    });
+    const configured = getConfiguredPathSetting(
+      RSTACK_PACKAGE_PATH_SETTING,
+      this.folder,
+    );
+    const rstackPackage = resolveRstackPackageJson(folderRoot, configured);
     if (rstackPackage.kind === 'invalid-setting') {
       // A wrong setting is fixed in the setting, not by an install, so it is
       // `crashed` rather than the not-installed `disabled`.
@@ -389,7 +393,6 @@ class FmtFolderRuntime {
             'rstack',
             this.folder.name,
             folderRoot,
-            undefined,
             RSTACK_PACKAGE_PATH_HINT,
           ),
         );
@@ -397,11 +400,11 @@ class FmtFolderRuntime {
       return;
     }
     this.#packageEpisode.clear();
-    const { packageJsonPath: pkgJsonPath, pkg } = rstackPackage;
+    const pkgJsonPath = rstackPackage.packageJsonPath;
 
-    // One read for the version and the bin entry, made by the resolution
-    // above; it re-reads from disk by design, so a reinstall is picked up on
-    // the next start.
+    // One read for the version and the bin entry; `readPackageJson` re-reads
+    // from disk by design, so a reinstall is picked up on the next start.
+    const pkg = readPackageJson(pkgJsonPath);
     const version = typeof pkg?.version === 'string' ? pkg.version : undefined;
     const versionCheck = checkPackageVersion('rstack', version);
     if (versionCheck.kind === 'mismatch') {
@@ -426,7 +429,7 @@ class FmtFolderRuntime {
       [
         ...rstackResolveHookArgs(
           path.dirname(pkgJsonPath),
-          rstackPackage.source,
+          configured !== undefined,
         ),
         rsBinJs,
         'fmt',

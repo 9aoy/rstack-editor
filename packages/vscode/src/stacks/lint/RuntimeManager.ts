@@ -21,7 +21,8 @@
 //   stopped same-key clients on reconcile — see AGENTS.md ("Ahead of upstream").
 
 import { workspace, type TextDocument, type WorkspaceFolder } from 'vscode';
-import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
+import { getConfiguredPathSetting } from '../../shared/nodeExecutableSetting';
+import { RSTACK_PACKAGE_PATH_SETTING } from '../../shared/rstackPackage';
 import type {
   CoreResolutionRequest,
   ResolvedCoreRuntime,
@@ -245,9 +246,9 @@ export class RuntimeManager {
       const resolved = await this.resolver.resolve(document, workspaceFolder, {
         mode,
         corePath: configuration.get<string>('corePath'),
-        rstackPackagePath: getConfiguredRstackPackagePath(
+        rstackPackagePath: getConfiguredPathSetting(
+          RSTACK_PACKAGE_PATH_SETTING,
           workspaceFolder,
-          document.uri,
         ),
       });
       return { action: 'bind', workspaceFolder, resolved };

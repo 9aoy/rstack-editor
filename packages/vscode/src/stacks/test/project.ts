@@ -5,11 +5,11 @@ import picomatch from 'picomatch';
 import { glob } from 'tinyglobby';
 import vscode from 'vscode';
 import { RSTACK_CONFIG_NAMES } from '../../detection';
+import { getConfiguredPathSetting } from '../../shared/nodeExecutableSetting';
 import {
-  type RstackPackageSource,
+  RSTACK_PACKAGE_PATH_SETTING,
   resolveRstackPackageJson,
 } from '../../shared/rstackPackage';
-import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
 import { resolveRstackShim } from './bridge';
 import { watchConfigValue } from './config';
 import {
@@ -80,8 +80,8 @@ export type ProjectSource = {
   readonly rstestResolutionDir?: string;
   /** True for a `Project` synthesized by the rstack bridge. */
   readonly isBridge?: boolean;
-  /** How the bridge found rstack; `setting` adds the resolve hook. */
-  readonly rstackSource?: RstackPackageSource;
+  /** `rstack.rstackCli.packagePath` chose rstack, so workers need the hook. */
+  readonly rstackFromSetting?: boolean;
 };
 
 export class WorkspaceManager implements vscode.Disposable {
@@ -343,16 +343,18 @@ export class WorkspaceManager implements vscode.Disposable {
 
     const candidateDirs = new Set<string>();
     const wanted = new Map<string, ProjectSource>();
-    // A set `rstack.rstackCli.packagePath` names one package for every
-    // bridge in the folder, so it is resolved once, not per directory.
-    const configuredPath = getConfiguredRstackPackagePath(this.workspaceFolder);
+    // A set `rstack.rstackCli.packagePath` is one package for every bridge.
+    const configuredPath = getConfiguredPathSetting(
+      RSTACK_PACKAGE_PATH_SETTING,
+      this.workspaceFolder,
+    );
     const configuredRstack =
       configuredPath === undefined
         ? undefined
-        : resolveRstackPackageJson({
-            configured: configuredPath,
-            folderRoot: this.workspaceFolder.uri.fsPath,
-          });
+        : resolveRstackPackageJson(
+            this.workspaceFolder.uri.fsPath,
+            configuredPath,
+          );
     for (const [cwd, rstackConfig] of winnerByDir) {
       const key = rstackConfig.toString();
       if (nativeProjectDirs.has(cwd)) continue;
@@ -389,7 +391,7 @@ export class WorkspaceManager implements vscode.Disposable {
         cwd,
         rstestResolutionDir: shim.packageDirectory,
         isBridge: true,
-        rstackSource: shim.source,
+        rstackFromSetting: configuredRstack !== undefined,
       });
       logger.info(
         `Driving Rstest from ${rstackConfig.fsPath} through the rstack config shim`,

@@ -487,7 +487,7 @@ export class Rslint implements Disposable {
       // Adaptation 2: the bridged worker's shim loads `rstack.config.*`.
       ...rstackResolveHookArgs(
         this.installation.rstackDirectory,
-        this.installation.rstackSource,
+        this.installation.rstackFromSetting,
       ),
       workerPath,
       '--lsp',

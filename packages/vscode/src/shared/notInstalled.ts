@@ -87,16 +87,13 @@ export class NotInstalledEpisode {
  * The output-channel line: where the stack looked, plus the stack's own
  * consequence — the same shape as the shared Node preflight message
  * (adaptation 6), where each caller appends what the state means for it.
- * `hint` names a way out the walk-up cannot see (an rstack caller passes
- * `RSTACK_PACKAGE_PATH_HINT`, #103).
  */
 export const formatNotInstalledLog = (
   packageName: string,
   folderName: string,
   searchedFrom: string,
   consequence?: string,
-  hint?: string,
 ): string =>
   `${packageName} is not installed in ${folderName} (node_modules missing); searched from ${searchedFrom}${
     consequence ? `; ${consequence}` : ''
-  }${hint ? `; ${hint}` : ''}`;
+  }`;

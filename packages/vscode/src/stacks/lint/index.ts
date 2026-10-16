@@ -223,8 +223,9 @@ class RslintController implements StackController {
                 missing,
                 workspaceFolder.name,
                 workspaceFolder.uri.fsPath,
-                `${document.uri} ${keeping ? `keeps ${keeping}` : 'will not lint'} until it is installed`,
-                missing === 'rstack' ? RSTACK_PACKAGE_PATH_HINT : undefined,
+                `${document.uri} ${keeping ? `keeps ${keeping}` : 'will not lint'} until it is installed${
+                  missing === 'rstack' ? `; ${RSTACK_PACKAGE_PATH_HINT}` : ''
+                }`,
               );
               logger.warn(warning);
             } else {

@@ -28,19 +28,13 @@ export const getConfiguredNodeExecutable = (
 ): string | undefined =>
   getConfiguredPathSetting(NODE_EXECUTABLE_SETTING, folder);
 
-/**
- * The one reading rule for a resource-scoped path setting: `undefined` when
- * unset or empty, else the value with `${workspaceFolder}` expanded.
- * `resource` defaults to the folder; pass a document to honour a narrower
- * scope.
- */
+/** A folder's path setting: unset or empty is `undefined`, else expanded. */
 export const getConfiguredPathSetting = (
   setting: string,
   folder: vscode.WorkspaceFolder,
-  resource: vscode.Uri = folder.uri,
 ): string | undefined => {
   const value = vscode.workspace
-    .getConfiguration(undefined, resource)
+    .getConfiguration(undefined, folder.uri)
     .get(setting);
   if (typeof value !== 'string' || value === '') {
     return undefined;

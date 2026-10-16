@@ -1,5 +1,5 @@
 // Preloaded via a `--import` node arg whose `pkg` query carries the
-// configured package.json path (why: `rstackResolveHookImportArgs` in
+// configured package.json path (why: `rstackResolveHookArgs` in
 // `rstackPackage.ts`).
 // Resolves `rstack` and `rstack/*` as if from inside the configured package,
 // through its own `exports`; every other specifier passes through. Plain JS,

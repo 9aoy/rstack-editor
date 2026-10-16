@@ -244,11 +244,10 @@ export class RstestApi {
         ...getConfigValue('nodeExecArgs', this.workspace).map((arg) =>
           this.expandWorkspaceFolder(arg),
         ),
-        // Adaptation 2: the bridge's shim loads `rstack.config.*`, in the
-        // worker (spawned or debugged) and in the terminal CLI alike.
+        // Adaptation 2: the bridge's shim loads `rstack.config.*`.
         ...rstackResolveHookArgs(
           this.rstestResolutionDir,
-          this.project.source.rstackSource,
+          this.project.source.rstackFromSetting,
         ),
       ],
     };

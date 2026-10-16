@@ -119,6 +119,8 @@ describe('resolveRstackShim', () => {
     expect(resolveRstackShim(root)).toBeUndefined();
     // The shared not-installed wording, with the bridge's own consequence.
     expect(logged.join('\n')).toContain('rstack is not installed');
+    // The way out for an install the walk-up cannot see (#103).
+    expect(logged.join('\n')).toContain('set "rstack.rstackCli.packagePath"');
     expect(logged.join('\n')).toContain('Rstest cannot be driven');
     // The uniform not-installed policy: the same `disabled` shape fmt and
     // lint report, with the restart command as the way out.
@@ -158,10 +160,7 @@ describe('resolveRstackShim', () => {
 
     expect(
       resolveRstackShim(root, {
-        configured: resolveRstackPackageJson({
-          configured: 'infra/node_modules/rstack',
-          folderRoot: root,
-        }),
+        configured: resolveRstackPackageJson(root, 'infra/node_modules/rstack'),
       }),
     ).toBeUndefined();
     expect(logged.join('\n')).toContain('rstack.rstackCli.packagePath');

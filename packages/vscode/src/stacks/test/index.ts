@@ -561,8 +561,6 @@ class RstestController implements StackController {
   // qualifies: installing a newer Node on the machine is not observable by the
   // extension and stays a manual restart, the deliberate half of the deal (see
   // `docs/adr/0001-node-runtime-selection.md`).
-  // `rstack.rstackCli.packagePath` moves every bridge's shim and core anchor,
-  // which a live project keeps until it is rebuilt.
   readonly restartOnSettings = [
     NODE_EXECUTABLE_SETTING,
     RSTACK_PACKAGE_PATH_SETTING,
