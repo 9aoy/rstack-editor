@@ -1,10 +1,14 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { resolveRstackPackageJson } from '../../shared/rstackPackage';
+import {
+  RSTACK_PACKAGE_PATH_HINT,
+  type RstackPackageResolution,
+  type RstackPackageSource,
+  resolveRstackPackageJson,
+} from '../../shared/rstackPackage';
 import {
   checkPackageVersion,
   formatVersionMismatch,
-  readPackageVersion,
 } from '../../shared/versionCheck';
 import {
   formatNotInstalledLog,
@@ -58,6 +62,8 @@ export type RstackShim = {
   readonly packageDirectory: string;
   /** The installed `rstack` version, when it could be read. */
   readonly version?: string;
+  /** Whether `rstack.rstackCli.packagePath` chose it (the resolve hook). */
+  readonly source: RstackPackageSource;
 };
 
 /**
@@ -81,25 +87,24 @@ export type RstackShim = {
 export function resolveRstackShim(
   configDir: string,
   {
-    folderRoot = configDir,
     configured,
     // The caller re-resolves on every tree refresh (a fresh `pnpm install` has
     // to be picked up without a reload), so a persistent failure must not
     // re-log.
     silent = false,
   }: {
-    /** The workspace folder root; a relative `configured` resolves from it. */
-    folderRoot?: string;
-    /** `rstack.rstackCli.packagePath`, `${workspaceFolder}` expanded. */
-    configured?: string;
+    /**
+     * The resolution of a set `rstack.rstackCli.packagePath`, made once by the
+     * caller for every bridge in the folder; absent, rstack is walked up to
+     * from `configDir`.
+     */
+    configured?: RstackPackageResolution;
     silent?: boolean;
   } = {},
 ): RstackShim | undefined {
-  const resolution = resolveRstackPackageJson({
-    configured,
-    folderRoot,
-    searchFrom: configDir,
-  });
+  const resolution =
+    configured ??
+    resolveRstackPackageJson({ configured: undefined, folderRoot: configDir });
   if (resolution.kind === 'invalid-setting') {
     // Not the not-installed state: the fix is the setting, not an install.
     if (!silent) {
@@ -116,6 +121,7 @@ export function resolveRstackShim(
           path.basename(configDir),
           configDir,
           'Rstest cannot be driven by "rstack.config.*" until it is installed',
+          RSTACK_PACKAGE_PATH_HINT,
         ),
       );
     }
@@ -126,7 +132,7 @@ export function resolveRstackShim(
     status.notInstalled(RSTACK_NOT_INSTALLED_STATUS, configDir);
     return undefined;
   }
-  const packageJsonPath = resolution.packageJsonPath;
+  const { packageJsonPath, source } = resolution;
 
   const packageDirectory = path.dirname(packageJsonPath);
   const configFilePath = path.join(packageDirectory, SHIM_RELATIVE_PATH);
@@ -142,10 +148,13 @@ export function resolveRstackShim(
     return undefined;
   }
 
-  // An uncached filesystem read: `nodeRequire` would pin the version seen by
-  // the first resolution for the lifetime of the extension host, defeating
+  // Read uncached by the resolution: `nodeRequire` would pin the version seen
+  // by the first resolution for the lifetime of the extension host, defeating
   // the re-resolution that every `syncBridgeProjects` pass performs.
-  const version = readPackageVersion(packageJsonPath);
+  const version =
+    typeof resolution.pkg?.version === 'string'
+      ? resolution.pkg.version
+      : undefined;
 
   const result = checkPackageVersion('rstack', version);
   if (result.kind === 'mismatch') {
@@ -166,5 +175,5 @@ export function resolveRstackShim(
   // installed, so `versionOk` retires whichever of the two latches the
   // previous pass left.
   status.versionOk(configDir);
-  return { configFilePath, packageDirectory, version };
+  return { configFilePath, packageDirectory, version, source };
 }

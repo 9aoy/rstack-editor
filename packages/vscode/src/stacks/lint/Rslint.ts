@@ -35,7 +35,7 @@ import {
   resolveUserNodeOnce,
 } from '../../shared/nodeResolution';
 import { getConfiguredNodeExecutable } from '../../shared/nodeExecutableSetting';
-import { rstackResolveHookArgs } from '../../shared/rstackPackageSetting';
+import { rstackResolveHookArgs } from '../../shared/rstackPackage';
 import type { StackState } from '../../types';
 import type { CoreInstallation } from './CoreResolver';
 import { LanguageServerProcessOwner } from './LanguageServerProcessOwner';
@@ -486,8 +486,8 @@ export class Rslint implements Disposable {
     const workerArgs = [
       // Adaptation 2: the bridged worker's shim loads `rstack.config.*`.
       ...rstackResolveHookArgs(
-        this.workspaceFolder,
         this.installation.rstackDirectory,
+        this.installation.rstackSource,
       ),
       workerPath,
       '--lsp',

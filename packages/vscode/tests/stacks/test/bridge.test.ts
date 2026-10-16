@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
+import { resolveRstackPackageJson } from '../../../src/shared/rstackPackage';
 import { resolveRstackShim } from '../../../src/stacks/test/bridge';
 import { logger } from '../../../src/stacks/test/logger';
 import { status } from '../../../src/stacks/test/status';
@@ -157,8 +158,10 @@ describe('resolveRstackShim', () => {
 
     expect(
       resolveRstackShim(root, {
-        folderRoot: root,
-        configured: 'infra/node_modules/rstack',
+        configured: resolveRstackPackageJson({
+          configured: 'infra/node_modules/rstack',
+          folderRoot: root,
+        }),
       }),
     ).toBeUndefined();
     expect(logged.join('\n')).toContain('rstack.rstackCli.packagePath');

@@ -28,15 +28,13 @@ import {
   NodePreflightError,
   resolveUserNodeOnce,
 } from '../../shared/nodeResolution';
-import { readPackageJson } from '../../shared/packageResolve';
 import {
+  RSTACK_PACKAGE_PATH_HINT,
   RSTACK_PACKAGE_PATH_SETTING,
   resolveRstackPackageJson,
-} from '../../shared/rstackPackage';
-import {
-  getConfiguredRstackPackagePath,
   rstackResolveHookArgs,
-} from '../../shared/rstackPackageSetting';
+} from '../../shared/rstackPackage';
+import { getConfiguredRstackPackagePath } from '../../shared/rstackPackageSetting';
 import {
   checkPackageVersion,
   formatVersionMismatch,
@@ -371,7 +369,6 @@ class FmtFolderRuntime {
     const rstackPackage = resolveRstackPackageJson({
       configured: getConfiguredRstackPackagePath(this.folder),
       folderRoot,
-      searchFrom: folderRoot,
     });
     if (rstackPackage.kind === 'invalid-setting') {
       // A wrong setting is fixed in the setting, not by an install, so it is
@@ -388,17 +385,23 @@ class FmtFolderRuntime {
       this.setState('disabled', formatNotInstalledStatus('fmt', 'rstack'));
       if (this.#packageEpisode.changed(folderRoot)) {
         context.output.warn(
-          formatNotInstalledLog('rstack', this.folder.name, folderRoot),
+          formatNotInstalledLog(
+            'rstack',
+            this.folder.name,
+            folderRoot,
+            undefined,
+            RSTACK_PACKAGE_PATH_HINT,
+          ),
         );
       }
       return;
     }
     this.#packageEpisode.clear();
-    const pkgJsonPath = rstackPackage.packageJsonPath;
+    const { packageJsonPath: pkgJsonPath, pkg } = rstackPackage;
 
-    // One read for the version and the bin entry; `readPackageJson` re-reads
-    // from disk by design, so a reinstall is picked up on the next start.
-    const pkg = readPackageJson(pkgJsonPath);
+    // One read for the version and the bin entry, made by the resolution
+    // above; it re-reads from disk by design, so a reinstall is picked up on
+    // the next start.
     const version = typeof pkg?.version === 'string' ? pkg.version : undefined;
     const versionCheck = checkPackageVersion('rstack', version);
     if (versionCheck.kind === 'mismatch') {
@@ -421,7 +424,10 @@ class FmtFolderRuntime {
     const owner = new LanguageServerProcessOwner(
       nodeExecutable,
       [
-        ...rstackResolveHookArgs(this.folder, path.dirname(pkgJsonPath)),
+        ...rstackResolveHookArgs(
+          path.dirname(pkgJsonPath),
+          rstackPackage.source,
+        ),
         rsBinJs,
         'fmt',
         '--lsp',

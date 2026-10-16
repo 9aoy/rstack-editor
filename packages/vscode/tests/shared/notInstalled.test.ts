@@ -5,6 +5,7 @@ import {
   formatNotInstalledLog,
   formatNotInstalledStatus,
 } from '../../src/shared/notInstalled';
+import { RSTACK_PACKAGE_PATH_HINT } from '../../src/shared/rstackPackage';
 
 // One wording for the three stacks: the restart hint names the stack's own
 // command exactly as the Command Palette shows it (`category: title` in
@@ -35,11 +36,18 @@ describe('not-installed wording', () => {
 
   it('logs where the stack looked', () => {
     expect(formatNotInstalledLog('rstack', 'app', '/repo/app')).toBe(
-      'rstack is not installed in app (node_modules missing); searched from /repo/app; if it is installed elsewhere, set "rstack.rstackCli.packagePath" to it',
+      'rstack is not installed in app (node_modules missing); searched from /repo/app',
     );
-    // The override is an `rstack` setting; other packages have their own.
-    expect(formatNotInstalledLog('@rstest/core', 'app', '/repo/app')).toBe(
-      '@rstest/core is not installed in app (node_modules missing); searched from /repo/app',
+    expect(
+      formatNotInstalledLog(
+        'rstack',
+        'app',
+        '/repo/app',
+        undefined,
+        RSTACK_PACKAGE_PATH_HINT,
+      ),
+    ).toBe(
+      'rstack is not installed in app (node_modules missing); searched from /repo/app; if it is installed elsewhere, set "rstack.rstackCli.packagePath" to it',
     );
   });
 

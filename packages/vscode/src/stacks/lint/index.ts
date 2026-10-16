@@ -8,7 +8,10 @@ import type {
 } from '../../types';
 import { NODE_EXECUTABLE_SETTING } from '../../shared/nodeResolution';
 import { formatNotInstalledLog } from '../../shared/notInstalled';
-import { RSTACK_PACKAGE_PATH_SETTING } from '../../shared/rstackPackage';
+import {
+  RSTACK_PACKAGE_PATH_HINT,
+  RSTACK_PACKAGE_PATH_SETTING,
+} from '../../shared/rstackPackage';
 import { CoreResolver, type ResolvedCoreRuntime } from './CoreResolver';
 import { Logger } from './logger';
 import { Rslint } from './Rslint';
@@ -221,6 +224,7 @@ class RslintController implements StackController {
                 workspaceFolder.name,
                 workspaceFolder.uri.fsPath,
                 `${document.uri} ${keeping ? `keeps ${keeping}` : 'will not lint'} until it is installed`,
+                missing === 'rstack' ? RSTACK_PACKAGE_PATH_HINT : undefined,
               );
               logger.warn(warning);
             } else {

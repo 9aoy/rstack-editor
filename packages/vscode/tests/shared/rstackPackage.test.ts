@@ -1,7 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from '@rstest/core';
-import { resolveRstackPackageJson } from '../../src/shared/rstackPackage';
+import {
+  resolveRstackPackageJson,
+  rstackResolveHookImportArgs,
+} from '../../src/shared/rstackPackage';
 import {
   installPackage,
   removeTemporaryDirectories,
@@ -31,11 +35,11 @@ describe('resolveRstackPackageJson', () => {
         resolveRstackPackageJson({
           configured,
           folderRoot: root,
-          searchFrom: root,
         }),
-      ).toEqual({
+      ).toMatchObject({
         kind: 'found',
         packageJsonPath: path.join(rstackDir, 'package.json'),
+        source: 'setting',
       });
     },
   );
@@ -53,11 +57,11 @@ describe('resolveRstackPackageJson', () => {
       resolveRstackPackageJson({
         configured: pinned,
         folderRoot: root,
-        searchFrom: root,
       }),
-    ).toEqual({
+    ).toMatchObject({
       kind: 'found',
       packageJsonPath: path.join(pinned, 'package.json'),
+      source: 'setting',
     });
   });
 
@@ -86,9 +90,8 @@ describe('resolveRstackPackageJson', () => {
       resolveRstackPackageJson({
         configured: 'infra/node_modules/rstack',
         folderRoot: root,
-        searchFrom: root,
       }),
-    ).toEqual({
+    ).toMatchObject({
       kind: 'found',
       packageJsonPath: path.join(storeDir, 'package.json'),
     });
@@ -102,7 +105,6 @@ describe('resolveRstackPackageJson', () => {
     const resolution = resolveRstackPackageJson({
       configured: 'infra/node_modules/rstack',
       folderRoot: root,
-      searchFrom: root,
     });
 
     expect(resolution.kind).toBe('invalid-setting');
@@ -120,7 +122,6 @@ describe('resolveRstackPackageJson', () => {
     const resolution = resolveRstackPackageJson({
       configured: coreDir,
       folderRoot: root,
-      searchFrom: root,
     });
 
     expect(resolution.kind).toBe('invalid-setting');
@@ -128,4 +129,17 @@ describe('resolveRstackPackageJson', () => {
       resolution.kind === 'invalid-setting' && resolution.message,
     ).toContain('is not the "rstack" package');
   });
+});
+
+it('carries both paths through one --import URL intact', () => {
+  const hookPath = '/opt/my extension/dist/rstack-resolve-hook.mjs';
+  const packageJsonPath = '/ws/my infra/node_modules/rstack/package.json';
+
+  const [flag, href] = rstackResolveHookImportArgs(hookPath, packageJsonPath);
+
+  expect(flag).toBe('--import');
+  // What the preload reads from `import.meta.url`.
+  const url = new URL(href);
+  expect(url.searchParams.get('pkg')).toBe(packageJsonPath);
+  expect(fileURLToPath(url)).toBe(hookPath);
 });

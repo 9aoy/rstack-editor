@@ -1,5 +1,4 @@
 import { MessageLatch } from './messageLatch';
-import { RSTACK_PACKAGE_PATH_SETTING } from './rstackPackage';
 import {
   COMMAND_CATEGORY,
   STACK_LABELS,
@@ -88,19 +87,16 @@ export class NotInstalledEpisode {
  * The output-channel line: where the stack looked, plus the stack's own
  * consequence — the same shape as the shared Node preflight message
  * (adaptation 6), where each caller appends what the state means for it.
- * A missing `rstack` also names the override for an installation the walk-up
- * cannot see (#103), once here for every stack that resolves it.
+ * `hint` names a way out the walk-up cannot see (an rstack caller passes
+ * `RSTACK_PACKAGE_PATH_HINT`, #103).
  */
 export const formatNotInstalledLog = (
   packageName: string,
   folderName: string,
   searchedFrom: string,
   consequence?: string,
+  hint?: string,
 ): string =>
   `${packageName} is not installed in ${folderName} (node_modules missing); searched from ${searchedFrom}${
     consequence ? `; ${consequence}` : ''
-  }${
-    packageName === 'rstack'
-      ? `; if it is installed elsewhere, set "${RSTACK_PACKAGE_PATH_SETTING}" to it`
-      : ''
-  }`;
+  }${hint ? `; ${hint}` : ''}`;

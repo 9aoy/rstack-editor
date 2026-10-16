@@ -20,7 +20,7 @@ import {
 import { CONFIG_SECTION, getConfigValue } from './config';
 import { createDebugWorker } from './debugWorker';
 import { MessageLatch } from '../../shared/messageLatch';
-import { rstackResolveHookArgs } from '../../shared/rstackPackageSetting';
+import { rstackResolveHookArgs } from '../../shared/rstackPackage';
 import {
   formatNotInstalledLog,
   formatNotInstalledStatus,
@@ -247,8 +247,8 @@ export class RstestApi {
         // Adaptation 2: the bridge's shim loads `rstack.config.*`, in the
         // worker (spawned or debugged) and in the terminal CLI alike.
         ...rstackResolveHookArgs(
-          this.workspace,
-          this.project.isBridge ? this.rstestResolutionDir : undefined,
+          this.rstestResolutionDir,
+          this.project.source.rstackSource,
         ),
       ],
     };

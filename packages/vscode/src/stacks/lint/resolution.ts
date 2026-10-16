@@ -4,7 +4,10 @@ import {
   findPackageJsonUncached,
   readPackageJson,
 } from '../../shared/packageResolve';
-import { resolveRstackPackageJson } from '../../shared/rstackPackage';
+import {
+  type RstackPackageSource,
+  resolveRstackPackageJson,
+} from '../../shared/rstackPackage';
 
 export type RslintMode = 'native' | 'bridged';
 
@@ -14,6 +17,7 @@ export interface RslintResolution {
   readonly coreVersion: string | undefined;
   readonly rstackDir?: string;
   readonly rstackVersion?: string;
+  readonly rstackSource?: RstackPackageSource;
   readonly shimPath?: string;
 }
 
@@ -23,7 +27,7 @@ export type RslintResolutionErrorCode =
 export class RslintResolutionError extends Error {
   /**
    * The package whose absence caused this failure — set only by the
-   * not-installed throws (`resolveInstalledPackage`, `resolveRstack`), the
+   * not-installed throws (`resolveInstalledCore`, `resolveRstack`), the
    * state the three stacks report uniformly (AGENTS.md). `missing-shim` and
    * `invalid-package` leave it unset on purpose: there the package is
    * present and the fix is an upgrade or the setting, not an install.
@@ -148,8 +152,8 @@ interface PackageLocation {
 function readPackageLocation(
   packageName: 'rstack' | '@rslint/core',
   packageJsonPath: string,
+  pkg = readPackageJson(packageJsonPath),
 ): PackageLocation {
-  const pkg = readPackageJson(packageJsonPath);
   if (pkg?.name !== packageName) {
     throw new RslintResolutionError(
       'invalid-package',
@@ -192,15 +196,18 @@ function resolveConfiguredCore(
 function resolveRstack(
   folderRoot: string,
   configured: string | undefined,
-): PackageLocation {
-  const resolution = resolveRstackPackageJson({
-    configured,
-    folderRoot,
-    searchFrom: folderRoot,
-  });
+): PackageLocation & { readonly source: RstackPackageSource } {
+  const resolution = resolveRstackPackageJson({ configured, folderRoot });
   switch (resolution.kind) {
     case 'found':
-      return readPackageLocation('rstack', resolution.packageJsonPath);
+      return {
+        ...readPackageLocation(
+          'rstack',
+          resolution.packageJsonPath,
+          resolution.pkg,
+        ),
+        source: resolution.source,
+      };
     case 'not-installed':
       throw new RslintResolutionError(
         'missing-rstack',
@@ -214,20 +221,16 @@ function resolveRstack(
   }
 }
 
-function resolveInstalledPackage(
-  packageName: 'rstack' | '@rslint/core',
-  searchRoot: string,
-  code: Extract<RslintResolutionErrorCode, 'missing-rstack' | 'missing-core'>,
-): PackageLocation {
-  const packageJsonPath = findPackageJsonUncached(packageName, searchRoot);
+function resolveInstalledCore(searchRoot: string): PackageLocation {
+  const packageJsonPath = findPackageJsonUncached('@rslint/core', searchRoot);
   if (packageJsonPath === undefined) {
     throw new RslintResolutionError(
-      code,
-      `Could not resolve ${packageName} from ${searchRoot}`,
-      { missingPackage: packageName },
+      'missing-core',
+      `Could not resolve @rslint/core from ${searchRoot}`,
+      { missingPackage: '@rslint/core' },
     );
   }
-  return readPackageLocation(packageName, packageJsonPath);
+  return readPackageLocation('@rslint/core', packageJsonPath);
 }
 
 export interface ResolveRslintOptions {
@@ -256,7 +259,7 @@ export function resolveRslint({
   rstackPackagePath,
   documentDirectory,
 }: ResolveRslintOptions): RslintResolution {
-  let rstack: PackageLocation | undefined;
+  let rstack: ReturnType<typeof resolveRstack> | undefined;
   let shimPath: string | undefined;
   if (mode === 'bridged') {
     rstack = resolveRstack(folderRoot, rstackPackagePath);
@@ -275,10 +278,8 @@ export function resolveRslint({
   const configuredCorePath = corePath?.trim();
   const core = configuredCorePath
     ? resolveConfiguredCore(folderRoot, configuredCorePath)
-    : resolveInstalledPackage(
-        '@rslint/core',
+    : resolveInstalledCore(
         rstack?.directory ?? documentDirectory ?? folderRoot,
-        'missing-core',
       );
 
   return {
@@ -290,6 +291,7 @@ export function resolveRslint({
       : {
           rstackDir: rstack.directory,
           rstackVersion: rstack.version,
+          rstackSource: rstack.source,
           shimPath,
         }),
   };

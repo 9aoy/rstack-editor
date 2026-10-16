@@ -1,5 +1,6 @@
-// Preloaded via a `--import` node arg (why: `rstackResolveHook.ts`), which
-// carries the configured package.json path in its `pkg` query.
+// Preloaded via a `--import` node arg whose `pkg` query carries the
+// configured package.json path (why: `rstackResolveHookImportArgs` in
+// `rstackPackage.ts`).
 // Resolves `rstack` and `rstack/*` as if from inside the configured package,
 // through its own `exports`; every other specifier passes through. Plain JS,
 // copied to `dist/` by `rslib.config.mts`: Node loads it outside the bundle.

@@ -25,10 +25,23 @@ export const expandWorkspaceFolder = (
  */
 export const getConfiguredNodeExecutable = (
   folder: vscode.WorkspaceFolder,
+): string | undefined =>
+  getConfiguredPathSetting(NODE_EXECUTABLE_SETTING, folder);
+
+/**
+ * The one reading rule for a resource-scoped path setting: `undefined` when
+ * unset or empty, else the value with `${workspaceFolder}` expanded.
+ * `resource` defaults to the folder; pass a document to honour a narrower
+ * scope.
+ */
+export const getConfiguredPathSetting = (
+  setting: string,
+  folder: vscode.WorkspaceFolder,
+  resource: vscode.Uri = folder.uri,
 ): string | undefined => {
   const value = vscode.workspace
-    .getConfiguration(undefined, folder.uri)
-    .get(NODE_EXECUTABLE_SETTING);
+    .getConfiguration(undefined, resource)
+    .get(setting);
   if (typeof value !== 'string' || value === '') {
     return undefined;
   }

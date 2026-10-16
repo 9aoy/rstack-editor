@@ -41,6 +41,7 @@ describe('resolveRslint', () => {
       coreVersion: '0.8.0',
       rstackDir,
       rstackVersion: '0.6.1',
+      rstackSource: 'walk-up',
       shimPath,
     });
   });
@@ -95,6 +96,7 @@ describe('resolveRslint', () => {
       coreVersion: '0.9.5',
       rstackDir,
       rstackVersion: '0.8.4',
+      rstackSource: 'setting',
       shimPath,
     });
   });
@@ -191,6 +193,7 @@ describe('resolveRslint', () => {
       coreVersion: '0.8.0',
       rstackDir,
       rstackVersion: '0.6.1',
+      rstackSource: 'walk-up',
       shimPath,
     });
   });

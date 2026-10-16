@@ -34,6 +34,7 @@ import {
   type RslintMode,
   type RslintResolution,
 } from './resolution';
+import type { RstackPackageSource } from '../../shared/rstackPackage';
 import { RslintVersionMismatchError } from './status';
 
 /**
@@ -55,6 +56,8 @@ export interface CoreInstallation {
   readonly shimPath?: string;
   readonly rstackDirectory?: string;
   readonly rstackVersion?: string;
+  /** Whether `rstack.rstackCli.packagePath` chose rstack (the resolve hook). */
+  readonly rstackSource?: RstackPackageSource;
 }
 
 export interface ResolvedCoreRuntime {
@@ -121,6 +124,7 @@ function validateInstallation(
           shimPath: resolution.shimPath,
           rstackDirectory: resolution.rstackDir,
           rstackVersion: resolution.rstackVersion,
+          rstackSource: resolution.rstackSource,
         }),
   };
 }

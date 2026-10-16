@@ -37,6 +37,7 @@ rs.mock('../../../src/detection', () => ({
 }));
 rs.mock('../../../src/shared/nodeExecutableSetting', () => ({
   getConfiguredNodeExecutable: () => undefined,
+  getConfiguredPathSetting: () => undefined,
 }));
 rs.mock('../../../src/shared/nodeResolution', () => ({
   resolveUserNodeOnce: async () => ({ executable: 'node' }),
